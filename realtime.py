@@ -79,6 +79,7 @@ session_start_time = datetime.datetime.now()
 current_session = Session(start_time=session_start_time)
 selected_session = None
 all_sessions: Dict[datetime.datetime, Session] = {}
+has_loaded_data = False
 
 
 def force_panel_redraw():
@@ -121,14 +122,17 @@ def on_save(file):
 
 
 @bpy.app.handlers.persistent
-def on_load(file):
-    global last_input_time, session_start_time, all_workspace_time, all_sessions
+def on_load(file = None):
+    global last_input_time, session_start_time, all_workspace_time, all_sessions, has_loaded_data
+    if not has_loaded_data:
+        return
     last_input_time = datetime.datetime.now()
     session_start_time = datetime.datetime.now()
 
     print("loading data")
     all_workspace_time = json.loads(bpy.context.scene.realtime_all_workspace_time_json)
     print(bpy.context.scene.realtime_all_workspace_time_json)
+    session_list = []
     if bpy.context.scene.realtime_all_sessions != "":
         session_list = bpy.context.scene.realtime_all_sessions.split("|")
         for session in session_list:
@@ -255,6 +259,9 @@ def register():
     bpy.app.handlers.save_pre.append(on_save)
     bpy.app.handlers.load_post.append(on_load)
     bpy.app.timers.register(realtime_increment_timer, first_interval=60.0, persistent=True)
+
+    has_loaded_data = True
+    bpy.app.timers.register(on_load, first_interval=1)
     
 
 def unregister():
